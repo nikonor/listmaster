@@ -86,9 +86,7 @@ func ParseCommand(command string) (code int, idx float32, element string,err err
         return 0,0.0,"",errors.New("it's not command")
     }
     words := CheckWords(strings.Fields(command))
-    fmt.Printf("words=%q\n",words);
     code,err = GetCommandCode(words[0])
-    fmt.Printf("code=%d\n",code);
     if err != nil {
         return 0,0.0,"",err
     }

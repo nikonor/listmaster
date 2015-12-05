@@ -35,6 +35,25 @@ func TestCheckWords (t *testing.T) {
     }
 }
 
+func TestGetCommandCode(t *testing.T) {
+    cases := []struct {
+        in string
+        out int
+    }{
+        {`/add`,1},
+        {`/list`,2},
+        {`/qwe`,0},
+    }
+
+    for _,c := range cases {
+        out,_ := GetCommandCode(c.in)
+        if c.out != out {
+            t.Errorf("GetCommandCode wrong: %d!=%d",c.out,out)
+        }
+    }
+
+}
+
 func TestParseCommand(t *testing.T) {
     cases := []struct {
         in string
