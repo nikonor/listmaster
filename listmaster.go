@@ -5,6 +5,8 @@ import (
 	"log"
 	"fmt"
 	"io/ioutil"
+    "strings"
+    "errors"
 )
 
 type ListElement struct {
@@ -23,19 +25,19 @@ var (
         {2,"Зоо магазин"},
         {2.1,"Феликс 10 пакетиков"},
     }
-    Rel = map[string]float32{
-        "ADD":1,
-        "ДОБ":1,
-        "ФВВ":1,
-        "LIST":2,
-        "ПОКАЗ":2,
-        "ДШЫЕ":2,
-        "DONE":3,
-        "ГОТ":3,
-        "ВЩТУ":3,
-        "DEL":4,
-        "УДАЛ":4,
-        "ВУД":4,
+    Rel = map[string]int{
+        "/ADD":1,
+        "/ДОБ":1,
+        "/ФВВ":1,
+        "/LIST":2,
+        "/ПОКАЗ":2,
+        "/ДШЫЕ":2,
+        "/DONE":3,
+        "/ГОТ":3,
+        "/ВЩТУ":3,
+        "/DEL":4,
+        "/УДАЛ":4,
+        "/ВУД":4,
     }
 )
 
@@ -80,5 +82,47 @@ func main() {
 //////////////////////    
 func ParseCommand(command string) (code int, idx float32, element string,err error) {
     fmt.Printf("Получили строку: %s\n",command)
-    return 1,1.0,"test",nil
+    if strings.HasPrefix(command,"/") != true {
+        return 0,0.0,"",errors.New("it's not command")
+    }
+    words := CheckWords(strings.Fields(command))
+    fmt.Printf("words=%q\n",words);
+    code,err = GetCommandCode(words[0])
+    fmt.Printf("code=%d\n",code);
+    if err != nil {
+        return 0,0.0,"",err
+    }
+    return code,1.0,"test",nil
+}
+
+func GetCommandCode(in string) (code int,err error) {
+    code = 0
+    code = Rel[strings.ToUpper(in)]
+    if code == 0 {
+        return 0,errors.New("Unknown command")
+    } else {
+        return code,nil
+    }
+}
+
+func CheckWords (words []string) []string {
+    var (
+        out []string
+        isWord = false
+    )
+    
+    for i := range words {
+        if isWord == false {
+            out = append(out,words[i])
+        } else {
+            out[len(out)-1] = out[len(out)-1]+" "+words[i]
+        }
+
+        if isWord == false && strings.HasPrefix(words[i],"\"") {
+            isWord = true
+        } else if isWord == true && strings.HasSuffix(words[i],"\"") {
+            isWord = false
+        }
+    }
+    return out
 }
