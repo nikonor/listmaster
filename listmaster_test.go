@@ -54,6 +54,27 @@ func TestGetCommandCode(t *testing.T) {
 
 }
 
+func TestGetListIdx(t *testing.T) {
+    cases := []struct {
+        in_code int
+        in_word string
+        out_idx float32
+    }{
+        {1,"",0},
+        {1,"1",1},
+        {1,"2.2",2.2},
+    }
+
+    for _,c := range cases {
+        out_idx,_ := GetListIdx(c.in_code,c.in_word)
+        if out_idx != c.out_idx {
+            t.Errorf("GetListIdx wrong: %v!=%v",out_idx,c.out_idx)
+        }
+    }
+
+    // GetListIdx
+}
+
 func TestParseCommand(t *testing.T) {
     cases := []struct {
         in string

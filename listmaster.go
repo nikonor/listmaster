@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/Syfaro/telegram-bot-api"
 	"log"
-	"fmt"
+	// "fmt"
 	"io/ioutil"
     "strings"
     "errors"
+    "strconv"
 )
 
 type ListElement struct {
@@ -81,7 +82,6 @@ func main() {
 //    
 //////////////////////    
 func ParseCommand(command string) (code int, idx float32, element string,err error) {
-    fmt.Printf("Получили строку: %s\n",command)
     if strings.HasPrefix(command,"/") != true {
         return 0,0.0,"",errors.New("it's not command")
     }
@@ -90,7 +90,17 @@ func ParseCommand(command string) (code int, idx float32, element string,err err
     if err != nil {
         return 0,0.0,"",err
     }
-    return code,1.0,"test",nil
+    idx,err = GetListIdx(code,words[1])
+    // TK - тут нужно сделать анализ, если указали название элемента не числом, а строкой
+    if err != nil {
+        return 0,0.0,"",err
+    }
+    return code,idx,"test",nil
+}
+
+func GetListIdx(code int, word string) (idx float32,err error){
+    idx64,err := strconv.ParseFloat(word,32)
+    return float32(idx64),nil
 }
 
 func GetCommandCode(in string) (code int,err error) {
