@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/Syfaro/telegram-bot-api"
 	"log"
-	// "fmt"
+	"fmt"
 	"io/ioutil"
     "strings"
     "errors"
@@ -19,7 +19,7 @@ var (
 	BotToken []byte
 	err error
     IsDevelop = true
-    Data = []ListElement{
+    DevData = []ListElement{
         {1,"Аптека"},
         {1.1,"Канефрон"},
         {1.2,"Йод"},
@@ -49,7 +49,6 @@ func init () {
 
 	}
 
-
 }
 
 func main() {
@@ -67,9 +66,13 @@ func main() {
 	updates, err := bot.GetUpdatesChan(ucfg)
 
     for update := range updates {
+        Lists := []ListElement{}
+        if IsDevelop {
+            Lists = DevData
+        }
         // log.Printf("[%#+v] %#+v", update.Message.From.UserName, update.Message.Text)
 
-        ParseCommand(update.Message.Text)
+        ParseCommand(update.Message.Text,Lists)
 
         msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
         msg.ReplyToMessageID = update.Message.MessageID
@@ -81,7 +84,7 @@ func main() {
 //   ParseCommand
 //    
 //////////////////////    
-func ParseCommand(command string) (code int, idx float32, element string,err error) {
+func ParseCommand(command string, lists []ListElement) (code int, idx float32, element string,err error) {
     if strings.HasPrefix(command,"/") != true {
         return 0,0.0,"",errors.New("it's not command")
     }
@@ -90,16 +93,21 @@ func ParseCommand(command string) (code int, idx float32, element string,err err
     if err != nil {
         return 0,0.0,"",err
     }
-    idx,err = GetListIdx(code,words[1])
-    // TK - тут нужно сделать анализ, если указали название элемента не числом, а строкой
-    if err != nil {
-        return 0,0.0,"",err
-    }
+    idx,_ = GetListIdx(code,words[1],lists)
+    fmt.Printf("GetListIdx: word1=%s,idx=%d!\n",words[1],idx);
     return code,idx,"test",nil
 }
 
-func GetListIdx(code int, word string) (idx float32,err error){
+func GetListIdx(code int, word string,lists []ListElement) (idx float32,err error){
     idx64,err := strconv.ParseFloat(word,32)
+    if err != nil {
+        for _,e := range lists {
+            fmt.Printf("\t!%s!==!%s!\n",e.Element,word);
+            if e.Element == word {
+                idx64 = float64(e.Idx)
+            }
+        }
+    }
     return float32(idx64),nil
 }
 
@@ -120,10 +128,18 @@ func CheckWords (words []string) []string {
     )
     
     for i := range words {
+        w := words[i]
+        
+        if strings.HasPrefix(w,"\"") {
+            w = w[1:]
+        } else if strings.HasSuffix(w,"\"") {
+            w = w[:len(w)-1]
+        }
+
         if isWord == false {
-            out = append(out,words[i])
+            out = append(out,w)
         } else {
-            out[len(out)-1] = out[len(out)-1]+" "+words[i]
+            out[len(out)-1] = out[len(out)-1]+" "+w
         }
 
         if isWord == false && strings.HasPrefix(words[i],"\"") {

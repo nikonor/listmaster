@@ -7,33 +7,7 @@ import (
     "strings"
 )
 
-func TestCheckWords (t *testing.T) {
-    cases := []struct {
-        in string
-        out []string
-    }{
-        {`/add продукты`,[]string{"/add","продукты"}},
-        {`/list "Зоо магазин"`,[]string{"/list",`"Зоо магазин"`}},
-        {`/add "Зоо магазин" "насыпку большую"`,[]string{`/add`,`"Зоо магазин"`,`"насыпку большую"`}},
-    }
 
-    for _,c := range cases {
-        out := CheckWords(strings.Fields(c.in))
-        if len(c.out) != len(out) {
-            t.Errorf("Len of array not equal")
-        }
-
-        isRight := true
-        for i := range out {
-            if out[i] != c.out[i] {
-                isRight = false
-            }
-        }
-        if isRight == false {
-            t.Errorf("Arrays is not equal")
-        }
-    }
-}
 
 func TestGetCommandCode(t *testing.T) {
     cases := []struct {
@@ -63,10 +37,21 @@ func TestGetListIdx(t *testing.T) {
         {1,"",0},
         {1,"1",1},
         {1,"2.2",2.2},
+        {1,"Зоо магазин",2},
+        {1,"продукты",0},
     }
 
+    DevData := []ListElement{
+        {1,"Аптека"},
+        {1.1,"Канефрон"},
+        {1.2,"Йод"},
+        {2,"Зоо магазин"},
+        {2.1,"Феликс 10 пакетиков"},
+    }
+
+
     for _,c := range cases {
-        out_idx,_ := GetListIdx(c.in_code,c.in_word)
+        out_idx,_ := GetListIdx(c.in_code, c.in_word, DevData)
         if out_idx != c.out_idx {
             t.Errorf("GetListIdx wrong: %v!=%v",out_idx,c.out_idx)
         }
@@ -74,6 +59,35 @@ func TestGetListIdx(t *testing.T) {
 
     // GetListIdx
 }
+
+func TestCheckWords (t *testing.T) {
+    cases := []struct {
+        in string
+        out []string
+    }{
+        {`/add продукты`,[]string{"/add","продукты"}},
+        {`/list "Зоо магазин"`,[]string{"/list",`Зоо магазин`}},
+        {`/add "Зоо магазин" "насыпку большую"`,[]string{`/add`,`Зоо магазин`,`насыпку большую`}},
+    }
+
+    for _,c := range cases {
+        out := CheckWords(strings.Fields(c.in))
+        if len(c.out) != len(out) {
+            t.Errorf("Len of array not equal")
+        }
+
+        isRight := true
+        for i := range out {
+            if out[i] != c.out[i] {
+                isRight = false
+            }
+        }
+        if isRight == false {
+            t.Errorf("Arrays is not equal")
+        }
+    }
+}
+
 
 func TestParseCommand(t *testing.T) {
     cases := []struct {
@@ -84,20 +98,29 @@ func TestParseCommand(t *testing.T) {
         out_error string
     }{
         {`/add продукты`,1,0,`продукты`,""},
-        {`/list "Зоо магазин"`,2,0,`Зоо магазин`,""},
+        {`/list "Зоо магазин"`,2,2,`Зоо магазин`,""},
         {`/add 1 "витамины сыну"`,1,1,"витамины сыну",""},
         {`/add "Зоо магазин" "насыпку большую"`,1,2,"насыпку большую",""},
         {`add "Зоо магазин" "насыпку большую"`,1,2,"насыпку большую","1"},
         {`/qwe wert eeeee`,0,0,"","1"},
     }
 
+    DevData := []ListElement{
+        {1,"Аптека"},
+        {1.1,"Канефрон"},
+        {1.2,"Йод"},
+        {2,"Зоо магазин"},
+        {2.1,"Феликс 10 пакетиков"},
+    }
+
+
     for _,c := range cases {
-        got_code,got_idx,got_element,got_error := ParseCommand(c.in)  
+        got_code,got_idx,got_element,got_error := ParseCommand(c.in,DevData)  
         if ( got_error != nil && c.out_error != "") {
             fmt.Printf("Right error: got=!%s!,out=!%s!\n",got_error,string(c.out_error))
         } else {
             if (got_code != c.out_code || got_idx != c.out_idx || got_element != c.out_element) {
-                t.Errorf("ParseCommand wrong: in=%s\n\t!%d!<=>!%d!%t!\n\t!%f!<=>!%f!%t!\n\t!%s!<=>!%s!%t!\n", c.in, c.out_code,got_code,(c.out_code==got_code),c.out_idx,got_idx,(c.out_idx==got_idx),c.out_element,got_element,(c.out_element==got_element))
+                t.Errorf("ParseCommand wrong: in=%s\n\tcode=!%d!<=>!%d!%t!\n\tidx=!%f!<=>!%f!%t!\n\tel=!%s!<=>!%s!%t!\n", c.in, c.out_code,got_code,(c.out_code==got_code),c.out_idx,got_idx,(c.out_idx==got_idx),c.out_element,got_element,(c.out_element==got_element))
             }
         }
     }
