@@ -1,0 +1,13 @@
+First stage:
+  ✔ ParseCommand @done (15-12-06 14:16) 
+  ☐ Выполнение команд
+     ☐list  
+     ☐add 
+     ☐del 
+     ☐done
+  ☐ Хранение данных 
+
+
+Second stage:
+  ☐ Команды
+    ☐ update
