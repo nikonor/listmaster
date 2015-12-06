@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/Syfaro/telegram-bot-api"
 	"log"
-	// "fmt"
+	"fmt"
 	"io/ioutil"
     "strings"
     "errors"
@@ -72,10 +72,20 @@ func main() {
         }
         // log.Printf("[%#+v] %#+v", update.Message.From.UserName, update.Message.Text)
 
-        ParseCommand(update.Message.Text,Lists)
+        code, idx, element,err := ParseCommand(update.Message.Text,Lists)
+        msg_text := ""
+        if err != nil {
+            msg_text = err.Error()
+        } else {
+            msg_text = fmt.Sprintf("ParseCommand returned: \n    code=%d,\n    idx =%d,\n    el  =%s\n",code,idx,element)
+            msg_text = ShowList(Lists)
+        }
 
-        msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
-        msg.ReplyToMessageID = update.Message.MessageID
+        // msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
+        msg := tgbotapi.NewMessage(update.Message.Chat. ID, msg_text)
+        if err != nil { 
+            msg.ReplyToMessageID = update.Message.MessageID
+        }
 
         bot.Send(msg)
     }}
@@ -93,12 +103,25 @@ func ParseCommand(command string, lists []ListElement) (code int, idx float32, e
     if err != nil {
         return 0,0.0,"",err
     }
-    idx,_ = GetListIdx(code,words[1],lists)
-
-    // TK = тут надо получить текст текстового элемента
-    element = words[len(words)-1]
-
+    if len(words) >= 2 {
+        idx,_ = GetListIdx(code,words[1],lists)
+        element = words[len(words)-1]
+    }
     return code,idx,element,nil
+}
+
+func ShowList(lists []ListElement) string {
+    out := ""
+    fmt.Println(lists);
+    for _,e := range lists {
+        fmt.Println(e);
+        if (e.Idx - float32(int(e.Idx))) == 0 { 
+            out = out + fmt.Sprintf("%v. %s\n",e.Idx,e.Element)
+        } else {
+            out = out + fmt.Sprintf("    %v. %s\n",e.Idx,e.Element)
+        }
+    }
+    return out
 }
 
 func GetListIdx(code int, word string,lists []ListElement) (idx float32,err error){
