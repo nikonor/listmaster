@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/Syfaro/telegram-bot-api"
 	"log"
-	"fmt"
+	// "fmt"
 	"io/ioutil"
     "strings"
     "errors"
@@ -94,15 +94,17 @@ func ParseCommand(command string, lists []ListElement) (code int, idx float32, e
         return 0,0.0,"",err
     }
     idx,_ = GetListIdx(code,words[1],lists)
-    fmt.Printf("GetListIdx: word1=%s,idx=%d!\n",words[1],idx);
-    return code,idx,"test",nil
+
+    // TK = тут надо получить текст текстового элемента
+    element = words[len(words)-1]
+
+    return code,idx,element,nil
 }
 
 func GetListIdx(code int, word string,lists []ListElement) (idx float32,err error){
     idx64,err := strconv.ParseFloat(word,32)
     if err != nil {
         for _,e := range lists {
-            fmt.Printf("\t!%s!==!%s!\n",e.Element,word);
             if e.Element == word {
                 idx64 = float64(e.Idx)
             }
