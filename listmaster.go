@@ -25,6 +25,7 @@ var (
         {1.2,"Йод"},
         {2,"Зоо магазин"},
         {2.1,"Феликс 10 пакетиков"},
+        {3,"Овощи, фрукты"},
     }
     Rel = map[string]int{
         "/ADD":1,
@@ -46,9 +47,7 @@ func init () {
 	BotToken, err = ioutil.ReadFile("./listmaster.key")
 	if err != nil {
 		log.Panic(err)
-
 	}
-
 }
 
 func main() {
@@ -62,17 +61,23 @@ func main() {
 
 	var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
 	ucfg.Timeout = 60
-	
+
 	updates, err := bot.GetUpdatesChan(ucfg)
 
     for update := range updates {
+
         Lists := []ListElement{}
         if IsDevelop {
             Lists = DevData
         }
-        // log.Printf("[%#+v] %#+v", update.Message.From.UserName, update.Message.Text)
 
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
+
+        if code == 1 {
+            fmt.Println("Надо добавить !",element,"! в список idx=",idx)
+            Lists = AddElement(Lists,idx,element)
+        }
+
         msg_text := ""
         if err != nil {
             msg_text = err.Error()
@@ -83,7 +88,7 @@ func main() {
 
         // msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
         msg := tgbotapi.NewMessage(update.Message.Chat. ID, msg_text)
-        if err != nil { 
+        if err != nil {
             msg.ReplyToMessageID = update.Message.MessageID
         }
 
@@ -92,8 +97,8 @@ func main() {
 //////////////////////
 //
 //   ParseCommand
-//    
-//////////////////////    
+//
+//////////////////////
 func ParseCommand(command string, lists []ListElement) (code int, idx float32, element string,err error) {
     if strings.HasPrefix(command,"/") != true {
         return 0,0.0,"",errors.New("it's not command")
@@ -110,12 +115,33 @@ func ParseCommand(command string, lists []ListElement) (code int, idx float32, e
     return code,idx,element,nil
 }
 
+func AddElement(lists []ListElement, idx float32, element string) []ListElement {
+    ret := []ListElement{}
+    if idx == 0 {
+        ret = lists
+        ret = append(ret,ListElement{getMaxIdx(lists),element})
+    } else {
+        for _,e := range lists {
+            if element != "" && e.Idx > idx {
+                ret = append(ret,ListElement{idx+0.111,element})
+                element = ""
+            }
+            ret = append(ret,e)
+        }
+    }
+    return ret
+}
+
+func getMaxIdx(lists []ListElement) float32 {
+    return float32(int(lists[len(lists)-1].Idx+1))
+}
+
 func ShowList(lists []ListElement) string {
     out := ""
     fmt.Println(lists);
     for _,e := range lists {
         fmt.Println(e);
-        if (e.Idx - float32(int(e.Idx))) == 0 { 
+        if (e.Idx - float32(int(e.Idx))) == 0 {
             out = out + fmt.Sprintf("%v. %s\n",e.Idx,e.Element)
         } else {
             out = out + fmt.Sprintf("    %v. %s\n",e.Idx,e.Element)
@@ -151,10 +177,10 @@ func CheckWords (words []string) []string {
         out []string
         isWord = false
     )
-    
+
     for i := range words {
         w := words[i]
-        
+
         if strings.HasPrefix(w,"\"") {
             w = w[1:]
         } else if strings.HasSuffix(w,"\"") {

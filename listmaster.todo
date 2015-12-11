@@ -1,11 +1,14 @@
 First stage:
-  ✔ ParseCommand @done (15-12-06 14:16) 
+  ✔ ParseCommand @done (15-12-06 14:16)
   ☐ Выполнение команд
-     ☐list  
-     ☐add 
-     ☐del 
-     ☐done
-  ☐ Хранение данных 
+     ☐ list
+        ✔ общий показ @done (15-12-06 15:19)
+        ☐ показ отдельного списка
+     ☐ add
+     ☐ del 
+     ☐ done
+     ☐
+  ☐ Хранение данных
 
 
 Second stage:
