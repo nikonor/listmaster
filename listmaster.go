@@ -21,11 +21,12 @@ var (
     IsDevelop = true
     DevData = []ListElement{
         {1,"Аптека"},
-        {1.1,"Канефрон"},
-        {1.2,"Йод"},
+        {1.001,"Канефрон"},
+        {1.002,"Йод"},
         {2,"Зоо магазин"},
-        {2.1,"Феликс 10 пакетиков"},
+        {2.001,"Феликс 10 пакетиков"},
         {3,"Овощи, фрукты"},
+        {3.001,"огурцы"},
     }
     Rel = map[string]int{
         "/ADD":1,
@@ -119,21 +120,38 @@ func AddElement(lists []ListElement, idx float32, element string) []ListElement 
     ret := []ListElement{}
     if idx == 0 {
         ret = lists
-        ret = append(ret,ListElement{getMaxIdx(lists),element})
+        ret = append(ret,ListElement{GetMaxIdx(lists),element})
     } else {
+        lastId := float32(0.0)
         for _,e := range lists {
-            if element != "" && e.Idx > idx {
-                ret = append(ret,ListElement{idx+0.111,element})
+            fmt.Printf("%.3f, lastId=%.3f e=%v\n",e.Idx, lastId, e);
+            if element != "" && e.Idx == (idx+1) {
+                new_el := ListElement{lastId+0.001,element}
+                fmt.Printf("\tДобавляем %v\n",new_el);
+                ret = append(ret,new_el)
                 element = ""
+            } else {
+                lastId = e.Idx
             }
             ret = append(ret,e)
+        }
+
+        if element != "" {
+            fmt.Printf("Надо добавить в конец: %.3f\n",lastId);
+            new_el := ListElement{lastId+0.001,element}
+            ret = append(ret,new_el)
         }
     }
     return ret
 }
 
-func getMaxIdx(lists []ListElement) float32 {
-    return float32(int(lists[len(lists)-1].Idx+1))
+func GetMaxIdx(lists []ListElement) float32 {
+    if  len(lists) > 0 {
+        return float32(int(lists[len(lists)-1].Idx+1))    
+    } else {
+        return 1;
+    }
+    
 }
 
 func ShowList(lists []ListElement) string {
@@ -142,9 +160,9 @@ func ShowList(lists []ListElement) string {
     for _,e := range lists {
         fmt.Println(e);
         if (e.Idx - float32(int(e.Idx))) == 0 {
-            out = out + fmt.Sprintf("%v. %s\n",e.Idx,e.Element)
+            out = out + fmt.Sprintf("%.f. %s\n",e.Idx,e.Element)
         } else {
-            out = out + fmt.Sprintf("    %v. %s\n",e.Idx,e.Element)
+            out = out + fmt.Sprintf("    %.3f. %s\n",e.Idx,e.Element)
         }
     }
     return out

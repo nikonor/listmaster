@@ -7,7 +7,49 @@ import (
     "strings"
 )
 
+func TestGetMaxIdx (t *testing.T) {
+    DevData = []ListElement{
+        {1,"Аптека"},
+        {1.001,"Канефрон"},
+        {1.002,"Йод"},
+        {2,"Зоо магазин"},
+        {2.001,"Феликс 10 пакетиков"},
+        {3,"Овощи, фрукты"},
+    }
+    out := GetMaxIdx(DevData)
+    if ( out != 4 ) {
+        t.Errorf("GetMaxIdx wrong. Test 1. out=%v!",out)
+    }
 
+    DevData = []ListElement{
+        {1,"Аптека"},
+        {1.001,"Канефрон"},
+        {1.002,"Йод"},
+        {2,"Зоо магазин"},
+        {2.001,"Феликс 10 пакетиков"},
+    }
+    out = GetMaxIdx(DevData)
+    if ( out != 3 ) {
+        t.Errorf("GetMaxIdx wrong. Test 2. out=%v!",out)
+    }
+
+    DevData = []ListElement{
+        {1,"Аптека"},
+        {2,"Овощи"},
+    }
+    out = GetMaxIdx(DevData)
+    if ( out != 3 ) {
+        t.Errorf("GetMaxIdx wrong. Test 3. out=%v!",out)
+    }
+
+    DevData = []ListElement{
+    }
+    out = GetMaxIdx(DevData)
+    if ( out != 1 ) {
+        t.Errorf("GetMaxIdx wrong. Test 4. out=%v!",out)
+    }
+
+}
 
 func TestGetCommandCode(t *testing.T) {
     cases := []struct {
