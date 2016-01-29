@@ -65,12 +65,13 @@ func main() {
 
 	updates, err := bot.GetUpdatesChan(ucfg)
 
+    Lists := []ListElement{}
+    if IsDevelop {
+        Lists = DevData
+    }
+
     for update := range updates {
 
-        Lists := []ListElement{}
-        if IsDevelop {
-            Lists = DevData
-        }
 
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
 
