@@ -72,7 +72,7 @@ func main() {
 
     for update := range updates {
 
-
+        fmt.Printf("Chat ID=%#v!\n",update.Message.Chat.ID);
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
 
         if code == 1 {
@@ -89,8 +89,8 @@ func main() {
         }
 
         // msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
-        msg := tgbotapi.NewMessage(update.Message.Chat. ID, msg_text)
-        if err != nil {
+        msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+        if err != nil { 
             msg.ReplyToMessageID = update.Message.MessageID
         }
 

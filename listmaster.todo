@@ -4,14 +4,58 @@ First stage:
      ☐ list
         ✔ общий показ @done (15-12-06 15:19)
         ☐ показ отдельного списка
-     ☐ add @now
-     в данным момент мы тут. мы можем уже добавлять новый список верхнего уровня, но пока криво добавляем записи.
+     ✔ add @now @done (16-01-29 20:30)
      ☐ del 
      ☐ done
      ☐
-  ☐ Хранение данных
+  ☐ Хранение данных @now 
+    ☐ надо иметь ключ, чтобы различать чаты - update.Message.Chat.ID
 
 
 Second stage:
   ☐ Команды
     ☐ update
+
+update.Message.Chat.ID
+
+В группе
+2016/01/29 20:00:20 getUpdates 
+{
+  "ok":true,
+  "result":[
+      {"update_id":206459171,
+       "message":{
+         "message_id":287,
+         "from":{
+           "id":120864,
+           "first_name":"Leonid",
+           "last_name":"Nikolaev",
+           "username":"nikonor"},
+         "chat":{"id":-43927056,
+                 "title":"test grp",
+                 "type":"group"},
+          "date":1454086848,
+          "text":"\/list"}}]}
+Лично
+2016/01/29 20:01:01 getUpdates 
+{
+  "ok":true,
+  "result":[
+    {"update_id":206459172,
+     "message":{
+       "message_id":289,
+       "from":{
+           "id":120864,
+           "first_name":"Leonid",
+           "last_name":"Nikolaev",
+           "username":"nikonor"},
+       "chat":{
+           "id":120864,
+           "first_name":"Leonid",
+           "last_name":"Nikolaev",
+           "username":"nikonor",
+           "type":"private"},
+        "date":1454086888,
+        "text":"\/list"}}]}
+
+
