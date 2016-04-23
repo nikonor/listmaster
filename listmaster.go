@@ -42,6 +42,7 @@ var (
         "/УДАЛ":4,
         "/ВУД":4,
     }
+    RelShort = []string{"","/ADD","/LIST","/DONE","/DEL"}
 )
 
 func init () {
@@ -57,7 +58,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	bot.Debug = true
+	bot.Debug = false
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
@@ -72,11 +73,10 @@ func main() {
 
     for update := range updates {
 
-        fmt.Printf("Chat ID=%#v!\n",update.Message.Chat.ID);
+        // log.Printf(");
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
 
         if code == 1 {
-            fmt.Println("Надо добавить !",element,"! в список idx=",idx)
             Lists = AddElement(Lists,idx,element)
         }
 
@@ -84,7 +84,7 @@ func main() {
         if err != nil {
             msg_text = err.Error()
         } else {
-            msg_text = fmt.Sprintf("ParseCommand returned: \n    code=%d,\n    idx =%d,\n    el  =%s\n",code,idx,element)
+            msg_text = fmt.Sprintf("ParseCommand returned: \n    code=%d,\n    idx =%v,\n    el  =%s\n",code,idx,element)
             msg_text = ShowList(Lists)
         }
 
@@ -93,7 +93,7 @@ func main() {
         if err != nil { 
             msg.ReplyToMessageID = update.Message.MessageID
         }
-
+        log.Printf("Chat ID=%#v\n\tcommand=%s\n\tsourse=\"%s\"\n\titem=\"%s\"\n",update.Message.Chat.ID,RelShort[code],update.Message.Text,element)
         bot.Send(msg)
     }}
 //////////////////////
@@ -105,6 +105,7 @@ func ParseCommand(command string, lists []ListElement) (code int, idx float32, e
     if strings.HasPrefix(command,"/") != true {
         return 0,0.0,"",errors.New("it's not command")
     }
+
     words := CheckWords(strings.Fields(command))
     code,err = GetCommandCode(words[0])
     if err != nil {
@@ -125,10 +126,8 @@ func AddElement(lists []ListElement, idx float32, element string) []ListElement 
     } else {
         lastId := float32(0.0)
         for _,e := range lists {
-            fmt.Printf("%.3f, lastId=%.3f e=%v\n",e.Idx, lastId, e);
             if element != "" && e.Idx == (idx+1) {
                 new_el := ListElement{lastId+0.001,element}
-                fmt.Printf("\tДобавляем %v\n",new_el);
                 ret = append(ret,new_el)
                 element = ""
             } else {
@@ -138,7 +137,6 @@ func AddElement(lists []ListElement, idx float32, element string) []ListElement 
         }
 
         if element != "" {
-            fmt.Printf("Надо добавить в конец: %.3f\n",lastId);
             new_el := ListElement{lastId+0.001,element}
             ret = append(ret,new_el)
         }
@@ -157,9 +155,7 @@ func GetMaxIdx(lists []ListElement) float32 {
 
 func ShowList(lists []ListElement) string {
     out := ""
-    fmt.Println(lists);
     for _,e := range lists {
-        fmt.Println(e);
         if (e.Idx - float32(int(e.Idx))) == 0 {
             out = out + fmt.Sprintf("%.f. %s\n",e.Idx,e.Element)
         } else {
@@ -196,13 +192,13 @@ func CheckWords (words []string) []string {
         out []string
         isWord = false
     )
-
     for i := range words {
         w := words[i]
 
         if strings.HasPrefix(w,"\"") {
             w = w[1:]
-        } else if strings.HasSuffix(w,"\"") {
+        }
+        if strings.HasSuffix(w,"\"") {
             w = w[:len(w)-1]
         }
 
