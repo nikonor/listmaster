@@ -1,85 +1,85 @@
 package main
 
 import (
-	"github.com/Syfaro/telegram-bot-api"
-	"log"
+	"bufio"
+	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/Syfaro/telegram-bot-api"
+	_ "github.com/lib/pq"
 	"io/ioutil"
-    "strings"
-    "errors"
-    "strconv"
-    _ "github.com/lib/pq"
-    "database/sql"    
-    "bufio"
-    "os"    
+	"log"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type ListElement struct {
-    Idx float32
-    Element string
+	Idx     float32
+	Element string
 }
 
 var (
-	BotToken []byte
-	err error
-    IsDevelop = true
-    DevData = []ListElement{
-        {1,"Аптека"},
-        {1.001,"Канефрон"},
-        {1.002,"Йод"},
-        {2,"Зоо магазин"},
-        {2.001,"Феликс 10 пакетиков"},
-        {3,"Овощи, фрукты"},
-        {3.001,"огурцы"},
-    }
-    Rel = map[string]int{
-        "/ADD":1,
-        "/ДОБ":1,
-        "/ФВВ":1,
-        "/LIST":2,
-        "/ПОКАЗ":2,
-        "/ДШЫЕ":2,
-        "/DONE":3,
-        "/ГОТ":3,
-        "/ВЩТУ":3,
-        "/DEL":4,
-        "/УДАЛ":4,
-        "/ВУД":4,
-    }
-    RelShort = []string{"","/ADD","/LIST","/DONE","/DEL"}
-    db_connect_string = ""
-    db *sql.DB    
+	BotToken  []byte
+	err       error
+	IsDevelop = true
+	DevData   = []ListElement{
+		{1, "Аптека"},
+		{1.001, "Канефрон"},
+		{1.002, "Йод"},
+		{2, "Зоо магазин"},
+		{2.001, "Феликс 10 пакетиков"},
+		{3, "Овощи, фрукты"},
+		{3.001, "огурцы"},
+	}
+	Rel = map[string]int{
+		"/ADD":   1,
+		"/ДОБ":   1,
+		"/ФВВ":   1,
+		"/LIST":  2,
+		"/ПОКАЗ": 2,
+		"/ДШЫЕ":  2,
+		"/DONE":  3,
+		"/ГОТ":   3,
+		"/ВЩТУ":  3,
+		"/DEL":   4,
+		"/УДАЛ":  4,
+		"/ВУД":   4,
+	}
+	RelShort          = []string{"", "/ADD", "/LIST", "/DONE", "/DEL"}
+	db_connect_string = ""
+	db                *sql.DB
 )
 
-func init () {
-    var tt []string
+func init() {
+	var tt []string
 
 	BotToken, err = ioutil.ReadFile("./listmaster.key")
 	if err != nil {
 		log.Panic(err)
 	}
 
-    var file *os.File
-    file, err = os.Open("./listmaster.db")
-    defer file.Close()    
-    scanner := bufio.NewScanner(file)
-    scanner.Split(bufio.ScanLines)
-    for scanner.Scan() {
-            t := scanner.Text()
-            t = strings.TrimSpace(t)
-            if len(t) > 0 {
-                tt = append(tt,t)
-            }
-    }    
-    db_connect_string = strings.Join(tt," ")
+	var file *os.File
+	file, err = os.Open("./listmaster.db")
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		t := scanner.Text()
+		t = strings.TrimSpace(t)
+		if len(t) > 0 {
+			tt = append(tt, t)
+		}
+	}
+	db_connect_string = strings.Join(tt, " ")
 }
 
 func main() {
-    db, err = sql.Open("postgres", db_connect_string)
-    if err != nil {
-        panic(err)
-    }
-    defer db.Close()    
+	db, err = sql.Open("postgres", db_connect_string)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
 
 	bot, err := tgbotapi.NewBotAPI(string(BotToken))
 	if err != nil {
@@ -94,194 +94,195 @@ func main() {
 
 	updates, err := bot.GetUpdatesChan(ucfg)
 
-    // Lists := []ListElement{}
-    // if IsDevelop {
-    //     Lists = DevData
-    // }
+	// Lists := []ListElement{}
+	// if IsDevelop {
+	//     Lists = DevData
+	// }
 
-    for update := range updates {
+	for update := range updates {
 
-        CID := update.Message.Chat.ID;
+		CID := update.Message.Chat.ID
 
-        Lists := []ListElement{}
-        Lists,err = ReadTree(db, CID)
+		Lists := []ListElement{}
+		Lists, err = ReadTree(db, CID)
 
-        code, idx, element,err := ParseCommand(update.Message.Text,Lists)
+		code, idx, element, err := ParseCommand(update.Message.Text, Lists)
 
-        if code == 1 {
-            Lists = AddElement(Lists, CID, idx, element, db)
-        }
+		if code == 1 {
+			Lists = AddElement(Lists, CID, idx, element, db)
+		}
 
-        Lists,err = ReadTree(db, CID)
+		Lists, err = ReadTree(db, CID)
 
-        msg_text := ""
-        if err != nil {
-            msg_text = err.Error()
-        } else {
-            msg_text = fmt.Sprintf("ParseCommand returned: \n    code=%d,\n    idx =%v,\n    el  =%s\n",code,idx,element)
-            msg_text = ShowList(Lists)
-        }
+		msg_text := ""
+		if err != nil {
+			msg_text = err.Error()
+		} else {
+			msg_text = fmt.Sprintf("ParseCommand returned: \n    code=%d,\n    idx =%v,\n    el  =%s\n", code, idx, element)
+			msg_text = ShowList(Lists)
+		}
 
-        // msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
-        msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
-        if err != nil { 
-            msg.ReplyToMessageID = update.Message.MessageID
-        }
-        log.Printf("Chat ID=%#v\n\tcommand=%s\n\tsourse=\"%s\"\n\titem=\"%s\"\n",CID,RelShort[code],update.Message.Text,element)
-        bot.Send(msg)
-    }}
+		// msg := tgbotapi.NewMessage(update.Message.Chat.	ID, update.Message.Text)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+		if err != nil {
+			msg.ReplyToMessageID = update.Message.MessageID
+		}
+		log.Printf("Chat ID=%#v\n\tcommand=%s\n\tsourse=\"%s\"\n\titem=\"%s\"\n", CID, RelShort[code], update.Message.Text, element)
+		bot.Send(msg)
+	}
+}
+
 //////////////////////
 //
 //   ParseCommand
 //
 //////////////////////
-func ParseCommand(command string, lists []ListElement) (code int, idx float32, element string,err error) {
-    if strings.HasPrefix(command,"/") != true {
-        return 0,0.0,"",errors.New("it's not command")
-    }
+func ParseCommand(command string, lists []ListElement) (code int, idx float32, element string, err error) {
+	if strings.HasPrefix(command, "/") != true {
+		return 0, 0.0, "", errors.New("it's not command")
+	}
 
-    words := CheckWords(strings.Fields(command))
-    code,err = GetCommandCode(words[0])
-    if err != nil {
-        return 0,0.0,"",err
-    }
-    if len(words) >= 2 {
-        idx,_ = GetListIdx(code,words[1],lists)
-        element = words[len(words)-1]
-    }
-    return code,idx,element,nil
+	words := CheckWords(strings.Fields(command))
+	code, err = GetCommandCode(words[0])
+	if err != nil {
+		return 0, 0.0, "", err
+	}
+	if len(words) >= 2 {
+		idx, _ = GetListIdx(code, words[1], lists)
+		element = words[len(words)-1]
+	}
+	return code, idx, element, nil
 }
 
-func ReadTree (db *sql.DB, CHAT_ID int) ([]ListElement,error) {
+func ReadTree(db *sql.DB, CHAT_ID int) ([]ListElement, error) {
 
-    rows, err := db.Query(`SELECT idx,item FROM tt where chat_id = $1 and show='t' order by idx;`,CHAT_ID)
-    if err != nil {
-        log.Printf("%#v",err)
-        panic("Error on select");
-    }
+	rows, err := db.Query(`SELECT idx,item FROM tt where chat_id = $1 and show='t' order by idx;`, CHAT_ID)
+	if err != nil {
+		log.Printf("%#v", err)
+		panic("Error on select")
+	}
 
-    L := []ListElement{}
+	L := []ListElement{}
 
-    for rows.Next() {
-        var idx float32
-        var text string
-        err = rows.Scan(&idx, &text)
-        new_el := ListElement{idx,text}
-        L = append(L,new_el)
+	for rows.Next() {
+		var idx float32
+		var text string
+		err = rows.Scan(&idx, &text)
+		new_el := ListElement{idx, text}
+		L = append(L, new_el)
 
-    }        
-    return L,err
+	}
+	return L, err
 }
 
+func AddElement(lists []ListElement, chat_id int, idx float32, element string, db *sql.DB) []ListElement {
+	ret := []ListElement{}
+	if idx == 0 {
+		MaxIdx := GetMaxIdx(lists)
+		_, err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3);`, chat_id, MaxIdx, element)
+		if err != nil {
+			fmt.Printf("%#v", err)
+			panic("Error on insert Root")
+		}
 
-func AddElement(lists []ListElement, chat_id int, idx float32, element string,db *sql.DB) []ListElement {
-    ret := []ListElement{}
-    if idx == 0 {
-        MaxIdx := GetMaxIdx(lists)
-        _, err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3);`,chat_id,MaxIdx,element)
-        if err != nil {
-            fmt.Printf("%#v",err)
-            panic("Error on insert Root");
-        }
+		ret = lists
+		ret = append(ret, ListElement{MaxIdx, element})
+	} else {
+		lastId := float32(0.0)
+		for _, e := range lists {
+			if element != "" && e.Idx == (idx+1) {
+				new_el := ListElement{lastId + 0.001, element}
+				ret = append(ret, new_el)
+				element = ""
+			} else {
+				lastId = e.Idx
+			}
+			ret = append(ret, e)
+		}
 
-        ret = lists
-        ret = append(ret,ListElement{MaxIdx,element})
-    } else {
-        lastId := float32(0.0)
-        for _,e := range lists {
-            if element != "" && e.Idx == (idx+1) {
-                new_el := ListElement{lastId+0.001,element}
-                ret = append(ret,new_el)
-                element = ""
-            } else {
-                lastId = e.Idx
-            }
-            ret = append(ret,e)
-        }
+		_, err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3)`, chat_id, (lastId + 0.001), element)
+		if err != nil {
+			log.Printf("%#v", err)
+			panic("Error on insert Root")
+		}
 
-        _,err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3)`,chat_id,(lastId+0.001),element)
-        if err != nil {
-            log.Printf("%#v",err)
-            panic("Error on insert Root");
-        }
-
-        if element != "" {
-            new_el := ListElement{lastId+0.001,element}
-            ret = append(ret,new_el)
-        }
-    }
-    return ret
+		if element != "" {
+			new_el := ListElement{lastId + 0.001, element}
+			ret = append(ret, new_el)
+		}
+	}
+	return ret
 }
 
 func GetMaxIdx(lists []ListElement) float32 {
-    if  len(lists) > 0 {
-        return float32(int(lists[len(lists)-1].Idx+1))    
-    } else {
-        return 1;
-    }
-    
+	if len(lists) > 0 {
+		return float32(int(lists[len(lists)-1].Idx + 1))
+	} else {
+		return 1
+	}
+
 }
 
 func ShowList(lists []ListElement) string {
-    out := ""
-    for _,e := range lists {
-        if (e.Idx - float32(int(e.Idx))) == 0 {
-            out = out + fmt.Sprintf("%.f. %s\n",e.Idx,e.Element)
-        } else {
-            out = out + fmt.Sprintf("    %.3f. %s\n",e.Idx,e.Element)
-        }
-    }
-    return out
+	out := ""
+	for _, e := range lists {
+		if (e.Idx - float32(int(e.Idx))) == 0 {
+			out = out + fmt.Sprintf("%.f. %s\n", e.Idx, e.Element)
+		} else {
+			out = out + fmt.Sprintf("    %.3f. %s\n", e.Idx, e.Element)
+		}
+	}
+	return out
 }
 
-func GetListIdx(code int, word string,lists []ListElement) (idx float32,err error){
-    idx64,err := strconv.ParseFloat(word,32)
-    if err != nil {
-        for _,e := range lists {
-            if e.Element == word {
-                idx64 = float64(e.Idx)
-            }
-        }
-    }
-    return float32(idx64),nil
+func GetListIdx(code int, word string, lists []ListElement) (idx float32, err error) {
+	idx64, err := strconv.ParseFloat(word, 32)
+	if err != nil {
+		for _, e := range lists {
+			if e.Element == word {
+				idx64 = float64(e.Idx)
+			}
+		}
+	}
+	return float32(idx64), nil
 }
 
-func GetCommandCode(in string) (code int,err error) {
-    code = 0
-    code = Rel[strings.ToUpper(in)]
-    if code == 0 {
-        return 0,errors.New("Unknown command")
-    } else {
-        return code,nil
-    }
+func GetCommandCode(in string) (code int, err error) {
+	code = 0
+	code = Rel[strings.ToUpper(in)]
+	if code == 0 {
+		return 0, errors.New("Unknown command")
+	} else {
+		return code, nil
+	}
 }
 
-func CheckWords (words []string) []string {
-    var (
-        out []string
-        isWord = false
-    )
-    for i := range words {
-        w := words[i]
+func CheckWords(words []string) []string {
+	var (
+		out    []string
+		isWord = false
+	)
+	for i := range words {
+		w := words[i]
 
-        if strings.HasPrefix(w,"\"") {
-            w = w[1:]
-        }
-        if strings.HasSuffix(w,"\"") {
-            w = w[:len(w)-1]
-        }
+		if strings.HasPrefix(w, "\"") {
+			w = w[1:]
+		}
+		if strings.HasSuffix(w, "\"") {
+			w = w[:len(w)-1]
+		}
 
-        if isWord == false {
-            out = append(out,w)
-        } else {
-            out[len(out)-1] = out[len(out)-1]+" "+w
-        }
+		if isWord == false {
+			out = append(out, w)
+		} else {
+			out[len(out)-1] = out[len(out)-1] + " " + w
+		}
 
-        if isWord == false && strings.HasPrefix(words[i],"\"") {
-            isWord = true
-        } else if isWord == true && strings.HasSuffix(words[i],"\"") {
-            isWord = false
-        }
-    }
-    return out
+		if isWord == false && strings.HasPrefix(words[i], "\"") {
+			isWord = true
+		} else if isWord == true && strings.HasSuffix(words[i], "\"") {
+			isWord = false
+		}
+	}
+	return out
 }
