@@ -103,27 +103,16 @@ func main() {
 
         CID := update.Message.Chat.ID;
 
-        rows, err_db := db.Query(`SELECT idx,item FROM tt where chat_id = $1 and show='t'`,CID)
-        if err_db != nil {
-            fmt.Printf("%#v",err_db)
-            panic("Error on select");
-        }
-
         Lists := []ListElement{}
-        for rows.Next() {
-            var idx float32
-            var text string
-            err = rows.Scan(&idx, &text)
-            new_el := ListElement{idx,text}
-            Lists = append(Lists,new_el)
-
-        }        
+        Lists,err = ReadTree(db, CID)
 
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
 
         if code == 1 {
-            Lists = AddElement(Lists,idx,element)
+            Lists = AddElement(Lists, CID, idx, element, db)
         }
+
+        Lists,err = ReadTree(db, CID)
 
         msg_text := ""
         if err != nil {
@@ -163,11 +152,40 @@ func ParseCommand(command string, lists []ListElement) (code int, idx float32, e
     return code,idx,element,nil
 }
 
-func AddElement(lists []ListElement, idx float32, element string) []ListElement {
+func ReadTree (db *sql.DB, CHAT_ID int) ([]ListElement,error) {
+
+    rows, err := db.Query(`SELECT idx,item FROM tt where chat_id = $1 and show='t' order by idx;`,CHAT_ID)
+    if err != nil {
+        log.Printf("%#v",err)
+        panic("Error on select");
+    }
+
+    L := []ListElement{}
+
+    for rows.Next() {
+        var idx float32
+        var text string
+        err = rows.Scan(&idx, &text)
+        new_el := ListElement{idx,text}
+        L = append(L,new_el)
+
+    }        
+    return L,err
+}
+
+
+func AddElement(lists []ListElement, chat_id int, idx float32, element string,db *sql.DB) []ListElement {
     ret := []ListElement{}
     if idx == 0 {
+        MaxIdx := GetMaxIdx(lists)
+        _, err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3);`,chat_id,MaxIdx,element)
+        if err != nil {
+            fmt.Printf("%#v",err)
+            panic("Error on insert Root");
+        }
+
         ret = lists
-        ret = append(ret,ListElement{GetMaxIdx(lists),element})
+        ret = append(ret,ListElement{MaxIdx,element})
     } else {
         lastId := float32(0.0)
         for _,e := range lists {
@@ -179,6 +197,12 @@ func AddElement(lists []ListElement, idx float32, element string) []ListElement 
                 lastId = e.Idx
             }
             ret = append(ret,e)
+        }
+
+        _,err := db.Exec(`INSERT INTO tt(chat_id,idx,item) VALUES($1,$2,$3)`,chat_id,(lastId+0.001),element)
+        if err != nil {
+            log.Printf("%#v",err)
+            panic("Error on insert Root");
         }
 
         if element != "" {
