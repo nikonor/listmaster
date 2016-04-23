@@ -3,7 +3,7 @@ package main
 import (
     "testing"
     // . "github.com/smartystreets/goconvey/convey"
-    "fmt"
+    // "fmt"
     "strings"
 )
 
@@ -162,7 +162,7 @@ func TestParseCommand(t *testing.T) {
     for _,c := range cases {
         got_code,got_idx,got_element,got_error := ParseCommand(c.in,DevData)  
         if ( got_error != nil && c.out_error != "") {
-            fmt.Printf("Right error: got=!%s!,out=!%s!\n",got_error,string(c.out_error))
+            // fmt.Printf("Right error: got=!%s!,out=!%s!\n",got_error,string(c.out_error))
         } else {
             if (got_code != c.out_code || got_idx != c.out_idx || got_element != c.out_element) {
                 t.Errorf("ParseCommand wrong: in=%s\n\tcode=!%d!<=>!%d!%t!\n\tidx=!%f!<=>!%f!%t!\n\tel=!%s!<=>!%s!%t!\n", c.in, c.out_code,got_code,(c.out_code==got_code),c.out_idx,got_idx,(c.out_idx==got_idx),c.out_element,got_element,(c.out_element==got_element))

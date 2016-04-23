@@ -8,6 +8,10 @@ import (
     "strings"
     "errors"
     "strconv"
+    _ "github.com/lib/pq"
+    "database/sql"    
+    "bufio"
+    "os"    
 )
 
 type ListElement struct {
@@ -43,16 +47,40 @@ var (
         "/ВУД":4,
     }
     RelShort = []string{"","/ADD","/LIST","/DONE","/DEL"}
+    db_connect_string = ""
+    db *sql.DB    
 )
 
 func init () {
+    var tt []string
+
 	BotToken, err = ioutil.ReadFile("./listmaster.key")
 	if err != nil {
 		log.Panic(err)
 	}
+
+    var file *os.File
+    file, err = os.Open("./listmaster.db")
+    defer file.Close()    
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
+    for scanner.Scan() {
+            t := scanner.Text()
+            t = strings.TrimSpace(t)
+            if len(t) > 0 {
+                tt = append(tt,t)
+            }
+    }    
+    db_connect_string = strings.Join(tt," ")
 }
 
 func main() {
+    db, err = sql.Open("postgres", db_connect_string)
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()    
+
 	bot, err := tgbotapi.NewBotAPI(string(BotToken))
 	if err != nil {
 		log.Panic(err)
@@ -66,14 +94,31 @@ func main() {
 
 	updates, err := bot.GetUpdatesChan(ucfg)
 
-    Lists := []ListElement{}
-    if IsDevelop {
-        Lists = DevData
-    }
+    // Lists := []ListElement{}
+    // if IsDevelop {
+    //     Lists = DevData
+    // }
 
     for update := range updates {
 
-        // log.Printf(");
+        CID := update.Message.Chat.ID;
+
+        rows, err_db := db.Query(`SELECT idx,item FROM tt where chat_id = $1 and show='t'`,CID)
+        if err_db != nil {
+            fmt.Printf("%#v",err_db)
+            panic("Error on select");
+        }
+
+        Lists := []ListElement{}
+        for rows.Next() {
+            var idx float32
+            var text string
+            err = rows.Scan(&idx, &text)
+            new_el := ListElement{idx,text}
+            Lists = append(Lists,new_el)
+
+        }        
+
         code, idx, element,err := ParseCommand(update.Message.Text,Lists)
 
         if code == 1 {
@@ -93,7 +138,7 @@ func main() {
         if err != nil { 
             msg.ReplyToMessageID = update.Message.MessageID
         }
-        log.Printf("Chat ID=%#v\n\tcommand=%s\n\tsourse=\"%s\"\n\titem=\"%s\"\n",update.Message.Chat.ID,RelShort[code],update.Message.Text,element)
+        log.Printf("Chat ID=%#v\n\tcommand=%s\n\tsourse=\"%s\"\n\titem=\"%s\"\n",CID,RelShort[code],update.Message.Text,element)
         bot.Send(msg)
     }}
 //////////////////////
